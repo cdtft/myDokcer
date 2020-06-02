@@ -10,9 +10,11 @@ import (
 // tty 是否创建命令行链接
 func NewParentProcess(tty bool, command string) *exec.Cmd {
 	logrus.Info("clone namespace")
+	//一开始我就有一个疑问，RunContainerInitProcess这个方法是在什么时候调用的
+	// /proc/self/exe init /bash/bin ==>> /myDocker/self/exe init /bash/bin
 	args := []string{"init", command}
 	// /proc/self是指当前运行进程的自己环境
-	// exe自己调自己，通过这种方式对创建出来的进程进行初始化
+	// exe自己调自己，通过这种方式对创建出来的进程进行初始化,这里的自己是指的myDocker这个程序
 	cmd := exec.Command("/proc/self/exe", args...)
 	//克隆namespace
 	cmd.SysProcAttr = &syscall.SysProcAttr{
@@ -36,6 +38,7 @@ func RunContainerInitProcess(command string, args []string) error {
 	defaultMountFlags := syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV
 	syscall.Mount("proc", "/proc", "proc", uintptr(defaultMountFlags), "")
 	argv := []string{command}
+	logrus.Infof("runContainerInitProcess command %s", command)
 	//syscall.Exec完成初始化动作并将用户进程运行起来
 	if err := syscall.Exec(command, argv, os.Environ()); err != nil {
 		logrus.Errorf(err.Error())
