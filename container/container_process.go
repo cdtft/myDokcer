@@ -9,6 +9,7 @@ import (
 
 // tty 是否创建命令行链接
 func NewParentProcess(tty bool, command string) *exec.Cmd {
+	logrus.Info("clone namespace")
 	args := []string{"init", command}
 	// /proc/self是指当前运行进程的自己环境
 	// exe自己调自己，通过这种方式对创建出来的进程进行初始化
@@ -29,10 +30,9 @@ func NewParentProcess(tty bool, command string) *exec.Cmd {
 }
 
 func RunContainerInitProcess(command string, args []string) error {
-	logrus.Info("command %s", command)
 	//MS_NOEXEC在本文件系统中不允许运行其他程序
 	//MS_NOSUID在本系统中运行程序的时候，不允许set-user-ID或set-group-ID
-	//MS_NODEV所有mount的系统都会默认设定的参数
+	//MS_NODEV所有mount的系统都会默认设定的参数RunContainerInitProcess
 	defaultMountFlags := syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV
 	syscall.Mount("proc", "/proc", "proc", uintptr(defaultMountFlags), "")
 	argv := []string{command}
