@@ -1,6 +1,7 @@
 package container
 
 import (
+	"github.com/sirupsen/logrus"
 	"os"
 	"os/exec"
 	"syscall"
@@ -25,4 +26,19 @@ func NewParentProcess(tty bool, command string) *exec.Cmd {
 		cmd.Stderr = os.Stderr
 	}
 	return cmd
+}
+
+func RunContainerInitProcess(command string, args []string) error {
+	logrus.Info("command %s", command)
+	//MS_NOEXEC在本文件系统中不允许运行其他程序
+	//MS_NOSUID在本系统中运行程序的时候，不允许set-user-ID或set-group-ID
+	//MS_NODEV所有mount的系统都会默认设定的参数
+	defaultMountFlags := syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV
+	syscall.Mount("proc", "/proc", "proc", uintptr(defaultMountFlags), "")
+	argv := []string{command}
+	//syscall.Exec完成初始化动作并将用户进程运行起来
+	if err := syscall.Exec(command, argv, os.Environ()); err != nil {
+		logrus.Errorf(err.Error())
+	}
+	return nil
 }
