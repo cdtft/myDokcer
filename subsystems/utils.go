@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"github.com/sirupsen/logrus"
 	"os"
+	"path"
 	"strings"
 )
 
@@ -28,4 +29,21 @@ func FindCgroupMountPoint(subsystemType string) string {
 	}
 	logrus.Infof("没有找到对应subsystem[%s]类型的cgroup路径", subsystemType)
 	return ""
+}
+
+//创建cgroupPath的绝对路径，并返回
+func GetAndCreateCgroupPath(subsystemType string, cgroupPath string) (string, error) {
+	cgroupMountPoint := FindCgroupMountPoint(subsystemType)
+	 _, err := os.Stat(path.Join(cgroupMountPoint, cgroupPath))
+	 if err != nil {
+	 	if os.IsNotExist(err) {
+	 		err := os.Mkdir(path.Join(cgroupMountPoint, cgroupPath), 0755)
+	 		if err != nil {
+	 			return "", err
+			}
+		} else {
+			return "", err
+		}
+	 }
+	 return path.Join(cgroupMountPoint, cgroupPath), nil
 }
