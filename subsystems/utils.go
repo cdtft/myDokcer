@@ -32,11 +32,11 @@ func FindCgroupMountPoint(subsystemType string) string {
 }
 
 //创建cgroupPath的绝对路径，并返回
-func GetAndCreateCgroupPath(subsystemType string, cgroupPath string) (string, error) {
+func GetAndCreateCgroupPath(subsystemType string, cgroupPath string, autoCreate bool) (string, error) {
 	cgroupMountPoint := FindCgroupMountPoint(subsystemType)
 	 _, err := os.Stat(path.Join(cgroupMountPoint, cgroupPath))
 	 if err != nil {
-	 	if os.IsNotExist(err) {
+	 	if os.IsNotExist(err) && autoCreate {
 	 		err := os.Mkdir(path.Join(cgroupMountPoint, cgroupPath), 0755)
 	 		if err != nil {
 	 			return "", err
