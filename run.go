@@ -2,7 +2,7 @@ package main
 
 import (
 	log "github.com/sirupsen/logrus"
-	"myDocker/infra/container"
+	"myDocker/container"
 	"os"
 )
 
