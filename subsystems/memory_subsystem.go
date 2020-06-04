@@ -32,7 +32,7 @@ func (s *MemorySubsystem) Remove(cgroupPath string) error {
 		return err
 	}
 	os.RemoveAll(absolutePath)
-	logrus.Info("移除cgroup:[%s]", cgroupPath)
+	logrus.Infof("移除cgroup:[%s]", cgroupPath)
 	return nil
 }
 
@@ -49,6 +49,6 @@ func (s *MemorySubsystem) Apply(cgroupPath string, pid int) error {
 	if err != nil {
 		return err
 	}
-	logrus.Info("进程：%d加入cgroup:[%s]", pid, cgroupPath)
+	logrus.Infof("进程：%d加入cgroup:[%s]", pid, cgroupPath)
 	return nil
 }

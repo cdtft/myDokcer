@@ -34,9 +34,9 @@ func (manager *Manager) Set(res *subsystems.ResourceConfig) {
 	}
 }
 
-func (manager *Manager) Remove(cgroup string) {
+func (manager *Manager) Remove() {
 	for _, subsystem := range subsystems.SubsystemIns {
-		err := subsystem.Remove(cgroup)
+		err := subsystem.Remove(manager.Path)
 		if err != nil {
 			logrus.Error(err)
 		}
