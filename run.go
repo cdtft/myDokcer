@@ -20,6 +20,7 @@ func Run(tty bool, command string, res * subsystems.ResourceConfig) {
 	cgroupManager.Apply(parent.Process.Pid)
 	sendInitCommand(command, writePip)
 	parent.Wait()
+	os.Exit(-1)
 }
 
 //管道通信
