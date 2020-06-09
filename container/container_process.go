@@ -41,7 +41,10 @@ func NewParentProcess(tty bool) (*exec.Cmd, *os.File) {
 	//为什么是extraFile,因为一个进程默认会有3个文件描述分别是标准输入，标准输出，标准错误
 	//在外带这个文件描述符
 	cmd.ExtraFiles = []*os.File{readPip}
-	cmd.Dir = "/root/busybox"
+	mntURL := "/root/mnt/"
+	rootURL := "/root/"
+	NewWorkSpace(rootURL, mntURL)
+	cmd.Dir = mntURL
 	return cmd, writePip
 }
 
@@ -125,5 +128,5 @@ func setMount() {
 	//MS_NODEV所有mount的系统都会默认设定的参数RunContainerInitProcess
 	defaultMountFlags := syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV
 	syscall.Mount("proc", "/proc", "proc", uintptr(defaultMountFlags), "")
-	syscall.Mount("tmpfs", "dev", "tmpfs", syscall.MS_NOSUID|syscall.MS_STRICTATIME, "mode=755")
+	syscall.Mount("tmpfs", "/dev", "tmpfs", syscall.MS_NOSUID|syscall.MS_STRICTATIME, "mode=755")
 }
