@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"syscall"
 )
@@ -40,6 +41,7 @@ func NewParentProcess(tty bool) (*exec.Cmd, *os.File) {
 	//为什么是extraFile,因为一个进程默认会有3个文件描述分别是标准输入，标准输出，标准错误
 	//在外带这个文件描述符
 	cmd.ExtraFiles = []*os.File{readPip}
+	cmd.Dir = "/root/busybox"
 	return cmd, writePip
 }
 
@@ -56,11 +58,8 @@ func RunContainerInitProcess() error {
 	if cmdArray == nil || len(cmdArray) == 0 {
 		return fmt.Errorf("user command is nil")
 	}
-	//MS_NOEXEC在本文件系统中不允许运行其他程序
-	//MS_NOSUID在本系统中运行程序的时候，不允许set-user-ID或set-group-ID
-	//MS_NODEV所有mount的系统都会默认设定的参数RunContainerInitProcess
-	defaultMountFlags := syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV
-	syscall.Mount("proc", "/proc", "proc", uintptr(defaultMountFlags), "")
+
+	setMount()
 
 	//在path中寻找命令的绝对路径
 	path, err := exec.LookPath(cmdArray[0])
@@ -87,4 +86,44 @@ func readUserCommand() []string {
 	commands := string(msg)
 	logrus.Info("子进程收到的命令：", commands)
 	return strings.Split(commands, " ")
+}
+
+//pivot_root是一个系统调用，主要功能是改变当前的root文件系统。
+//pivot_root将当前的进程的root文件系统移动到put_old文件夹中，然后使用new_root成为新的root文件系统.
+func pivotRoot(root string) error {
+	if err := syscall.Mount(root, root, "bind", syscall.MS_BIND|syscall.MS_REC, ""); err != nil {
+		return fmt.Errorf("mount rootfs to itself error: %v", err)
+	}
+	oldRootDir := filepath.Join(root, ".pivot_root")
+	if err := os.Mkdir(oldRootDir, 0777); err != nil {
+		return err
+	}
+	if err := syscall.PivotRoot(root, oldRootDir); err != nil {
+		return err
+	}
+	if err := syscall.Chdir("/"); err != nil {
+		return fmt.Errorf("chanage work space to / error : %v", err)
+	}
+	pivotDir := filepath.Join("/", ".pivot_root")
+	if err := syscall.Unmount(pivotDir, syscall.MNT_DETACH); err != nil {
+		return err
+	}
+	return os.Remove(pivotDir)
+}
+
+func setMount() {
+	pwd, err := os.Getwd()
+	if err != nil {
+		logrus.Errorf("get current location error %v", err)
+		return
+	}
+
+	pivotRoot(pwd)
+
+	//MS_NOEXEC在本文件系统中不允许运行其他程序
+	//MS_NOSUID在本系统中运行程序的时候，不允许set-user-ID或set-group-ID
+	//MS_NODEV所有mount的系统都会默认设定的参数RunContainerInitProcess
+	defaultMountFlags := syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV
+	syscall.Mount("proc", "/proc", "proc", uintptr(defaultMountFlags), "")
+	syscall.Mount("tmpfs", "dev", "tmpfs", syscall.MS_NOSUID|syscall.MS_STRICTATIME, "mode=755")
 }
