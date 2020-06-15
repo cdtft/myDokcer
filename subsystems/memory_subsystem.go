@@ -49,6 +49,7 @@ func (s *MemorySubsystem) Apply(cgroupPath string, pid int) error {
 	if err != nil {
 		return err
 	}
+
 	logrus.Infof("进程：%d加入cgroup:[%s]", pid, cgroupPath)
 	return nil
 }
